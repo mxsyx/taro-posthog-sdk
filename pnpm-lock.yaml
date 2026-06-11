@@ -602,6 +602,24 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
 
+  packages/miniprogram:
+    devDependencies:
+      '@babel/preset-env':
+        specifier: 'catalog:'
+        version: 7.28.5(@babel/core@7.28.5)
+      '@babel/preset-typescript':
+        specifier: 'catalog:'
+        version: 7.28.5(@babel/core@7.28.5)
+      '@posthog-tooling/rollup-utils':
+        specifier: workspace:*
+        version: link:../../tooling/rollup-utils
+      '@posthog-tooling/tsconfig-base':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig-base
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+
   packages/next:
     dependencies:
       '@posthog/core':

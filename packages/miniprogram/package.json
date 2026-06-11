@@ -1,0 +1,40 @@
+{
+    "name": "@posthog/miniprogram",
+    "version": "0.0.1",
+    "description": "Minimal PostHog SDK for WeChat Mini Programs",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/PostHog/posthog-js.git",
+        "directory": "packages/miniprogram"
+    },
+    "license": "MIT",
+    "main": "dist/index.cjs",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "clean": "rimraf dist coverage",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
+        "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version)\" > src/version.ts",
+        "build": "rollup -c",
+        "dev": "rollup -c -w",
+        "package": "pnpm pack --out $PACKAGE_DEST/%s.tgz"
+    },
+    "files": [
+        "dist",
+        "src"
+    ],
+    "devDependencies": {
+        "@babel/preset-env": "catalog:",
+        "@babel/preset-typescript": "catalog:",
+        "@posthog-tooling/rollup-utils": "workspace:*",
+        "@posthog-tooling/tsconfig-base": "workspace:*",
+        "rimraf": "^6.1.2"
+    },
+    "keywords": [
+        "posthog",
+        "wechat",
+        "miniprogram",
+        "analytics"
+    ]
+}

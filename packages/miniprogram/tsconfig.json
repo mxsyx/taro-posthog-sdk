@@ -1,0 +1,11 @@
+{
+    "extends": "@posthog-tooling/tsconfig-base",
+    "compilerOptions": {
+        "rootDir": ".",
+        "incremental": false,
+        "lib": ["ES2020"],
+        "types": []
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules"]
+}
