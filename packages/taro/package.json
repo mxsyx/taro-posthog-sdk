@@ -4,7 +4,7 @@
     "description": "Minimal PostHog SDK for Taro mini apps",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/PostHog/posthog-js.git",
+        "url": "git+https://github.com/mxsyx/taro-posthog-sdk.git",
         "directory": "packages/taro"
     },
     "license": "MIT",
