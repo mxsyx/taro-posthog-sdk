@@ -1,3 +1,4 @@
+import Taro from '@tarojs/taro'
 import { version } from './version'
 import type {
     CaptureOptions,
@@ -7,15 +8,13 @@ import type {
     PersistedState,
     PostHogMiniProgramOptions,
     Properties,
-    WxLike,
-    WxPage,
-    WxRequestSuccessResult,
+    TaroPage,
 } from './types'
 
 declare const setTimeout: (handler: () => void, timeout?: number) => unknown
 declare const clearTimeout: (timeoutId: unknown) => void
 declare const console: { log: (message?: unknown, ...optionalParams: unknown[]) => void }
-declare const getCurrentPages: (() => WxPage[]) | undefined
+declare const getCurrentPages: (() => TaroPage[]) | undefined
 
 export * from './types'
 
@@ -25,10 +24,12 @@ const DEFAULT_FLUSH_INTERVAL = 10000
 const DEFAULT_REQUEST_TIMEOUT = 10000
 const LIBRARY = 'miniprogram'
 
-const globalWx = (): WxLike | undefined => {
-    const candidate = (globalThis as unknown as { wx?: WxLike }).wx
-    return candidate && typeof candidate.request === 'function' ? candidate : undefined
+type TaroWithRouteEvents = typeof Taro & {
+    onAppRoute?: (callback: (route: PageviewRoute) => void) => void
+    offAppRoute?: (callback: (route: PageviewRoute) => void) => void
 }
+
+const taro = Taro as TaroWithRouteEvents
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '')
 
@@ -58,25 +59,29 @@ const createUuid = (): string => {
     })
 }
 
-const getCurrentMiniProgramPages = (): WxPage[] => {
+const getCurrentTaroPages = (taro?: TaroWithRouteEvents): TaroPage[] => {
     try {
+        if (typeof taro?.getCurrentPages === 'function') {
+            return taro.getCurrentPages() as TaroPage[]
+        }
         return typeof getCurrentPages === 'function' ? getCurrentPages() : []
     } catch {
         return []
     }
 }
 
-const normalizeRoute = (route?: PageviewRoute): PageviewRoute => {
+const normalizeRoute = (route?: PageviewRoute, taro?: TaroWithRouteEvents): PageviewRoute => {
     if (route?.path || route?.route) {
         return route
     }
 
-    const pages = getCurrentMiniProgramPages()
-    const currentPage: WxPage | undefined = pages[pages.length - 1]
+    const pages = getCurrentTaroPages(taro)
+    const currentPage: TaroPage | undefined = pages[pages.length - 1]
+    const path = currentPage?.route || currentPage?.path || currentPage?.$taroPath
 
     return {
-        path: currentPage?.route,
-        route: currentPage?.route,
+        path,
+        route: path,
         query: currentPage?.options,
     }
 }
@@ -92,7 +97,6 @@ export class PostHogMiniProgram {
     private readonly flushInterval: number
     private readonly requestTimeout: number
     private readonly storageKey: string
-    private readonly wx?: WxLike
     private readonly options: PostHogMiniProgramOptions
     private state: PersistedState = {}
     private flushTimer?: ReturnType<typeof setTimeout>
@@ -111,7 +115,6 @@ export class PostHogMiniProgram {
         this.flushInterval = options.flush_interval ?? DEFAULT_FLUSH_INTERVAL
         this.requestTimeout = options.request_timeout ?? DEFAULT_REQUEST_TIMEOUT
         this.storageKey = `ph_${options.persistence_name || this.apiKey}_miniprogram`
-        this.wx = options.wx || globalWx()
         this.disabled = !this.apiKey
 
         this.state = this.readState()
@@ -125,7 +128,7 @@ export class PostHogMiniProgram {
         this.appHideHandler = () => {
             void this.flush().catch(() => undefined)
         }
-        this.wx?.onAppHide?.(this.appHideHandler)
+        taro.onAppHide?.(this.appHideHandler)
 
         options.loaded?.(this)
     }
@@ -176,7 +179,7 @@ export class PostHogMiniProgram {
     }
 
     captureScreen(route?: PageviewRoute, properties: Properties = {}): CaptureResult | undefined {
-        const normalizedRoute = normalizeRoute(route)
+        const normalizedRoute = normalizeRoute(route, taro)
         const path = normalizedRoute.path || normalizedRoute.route || ''
         const query = stringifyQuery(normalizedRoute.query)
         const currentUrl = `${path}${query}`
@@ -190,7 +193,7 @@ export class PostHogMiniProgram {
             $pathname: path,
             $referrer: '$direct',
             $screen_name: currentUrl || path,
-            wx_open_type: normalizedRoute.openType,
+            taro_open_type: normalizedRoute.openType,
             ...(this.options.get_pageview_properties?.(normalizedRoute) || {}),
             ...properties,
         }
@@ -271,18 +274,18 @@ export class PostHogMiniProgram {
             setTimeout(() => this.captureScreen(), 0)
         }
 
-        if (!this.wx?.onAppRoute || this.appRouteHandler) {
+        if (!taro.onAppRoute || this.appRouteHandler) {
             return
         }
 
         this.appRouteHandler = (route: PageviewRoute) => {
             this.captureScreen(route)
         }
-        this.wx.onAppRoute(this.appRouteHandler)
+        taro.onAppRoute(this.appRouteHandler)
     }
 
     async flush(): Promise<void> {
-        if (this.disabled || !this.wx) {
+        if (this.disabled) {
             return
         }
 
@@ -302,12 +305,12 @@ export class PostHogMiniProgram {
         this.clearFlushTimer()
 
         if (this.appRouteHandler) {
-            this.wx?.offAppRoute?.(this.appRouteHandler)
+            taro.offAppRoute?.(this.appRouteHandler)
             this.appRouteHandler = undefined
         }
 
         if (this.appHideHandler) {
-            this.wx?.offAppHide?.(this.appHideHandler)
+            taro.offAppHide?.(this.appHideHandler)
             this.appHideHandler = undefined
         }
     }
@@ -341,7 +344,7 @@ export class PostHogMiniProgram {
 
         let systemInfo: Record<string, unknown> = {}
         try {
-            systemInfo = this.wx?.getSystemInfoSync?.() || {}
+            systemInfo = (taro.getSystemInfoSync?.() || {}) as unknown as Record<string, unknown>
         } catch {
             systemInfo = {}
         }
@@ -355,10 +358,10 @@ export class PostHogMiniProgram {
             $device_manufacturer: getString(systemInfo.brand),
             $os: getString(systemInfo.platform),
             $os_version: getString(systemInfo.system),
-            wx_pixel_ratio: getNumber(systemInfo.pixelRatio),
-            wx_sdk_version: getString(systemInfo.SDKVersion),
-            wx_language: getString(systemInfo.language),
-            wx_theme: getString(systemInfo.theme),
+            taro_pixel_ratio: getNumber(systemInfo.pixelRatio),
+            taro_sdk_version: getString(systemInfo.SDKVersion),
+            taro_language: getString(systemInfo.language),
+            taro_theme: getString(systemInfo.theme),
         }
 
         return this.systemInfoProperties
@@ -404,7 +407,7 @@ export class PostHogMiniProgram {
 
     private sendBatch(batch: CaptureResult[]): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.wx?.request({
+            taro.request({
                 url: `${this.host}/batch/`,
                 method: 'POST',
                 data: {
@@ -416,7 +419,7 @@ export class PostHogMiniProgram {
                     'Content-Type': 'application/json',
                 },
                 timeout: this.requestTimeout,
-                success: (result: WxRequestSuccessResult) => {
+                success: (result) => {
                     if (result.statusCode >= 200 && result.statusCode < 300) {
                         resolve()
                     } else {
@@ -430,7 +433,7 @@ export class PostHogMiniProgram {
 
     private readState(): PersistedState {
         try {
-            const value = this.wx?.getStorageSync?.(this.storageKey)
+            const value = taro.getStorageSync?.(this.storageKey)
             if (typeof value === 'string') {
                 const parsed: unknown = JSON.parse(value)
                 return isRecord(parsed) ? (parsed as PersistedState) : {}
@@ -444,7 +447,7 @@ export class PostHogMiniProgram {
 
     private persistState(): void {
         try {
-            this.wx?.setStorageSync?.(this.storageKey, JSON.stringify(this.state))
+            taro.setStorageSync?.(this.storageKey, JSON.stringify(this.state))
         } catch {
             return
         }

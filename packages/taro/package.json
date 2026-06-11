@@ -1,11 +1,11 @@
 {
-    "name": "@posthog/miniprogram",
-    "version": "0.0.1",
-    "description": "Minimal PostHog SDK for WeChat Mini Programs",
+    "name": "taro-posthog-sdk",
+    "version": "1.0.0",
+    "description": "Minimal PostHog SDK for Taro mini apps",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/PostHog/posthog-js.git",
-        "directory": "packages/miniprogram"
+        "directory": "packages/taro"
     },
     "license": "MIT",
     "main": "dist/index.cjs",
@@ -24,15 +24,20 @@
         "dist",
         "src"
     ],
+    "peerDependencies": {
+        "@tarojs/taro": "^4.1.4"
+    },
     "devDependencies": {
         "@babel/preset-env": "catalog:",
         "@babel/preset-typescript": "catalog:",
         "@posthog-tooling/rollup-utils": "workspace:*",
         "@posthog-tooling/tsconfig-base": "workspace:*",
+        "@tarojs/taro": "^4.1.4",
         "rimraf": "^6.1.2"
     },
     "keywords": [
         "posthog",
+        "taro",
         "wechat",
         "miniprogram",
         "analytics"

@@ -51,7 +51,6 @@ export interface PostHogMiniProgramOptions {
     before_send?: BeforeSendFn
     get_pageview_properties?: (route: PageviewRoute) => Properties
     loaded?: (posthog: PostHogMiniProgramLike) => void
-    wx?: WxLike
 }
 
 export interface PostHogMiniProgramLike {
@@ -61,37 +60,11 @@ export interface PostHogMiniProgramLike {
     flush(): Promise<void>
 }
 
-export interface WxRequestSuccessResult {
-    statusCode: number
-    data?: unknown
-    header?: Record<string, string>
-}
-
-export interface WxRequestOptions {
-    url: string
-    method: 'POST'
-    data: unknown
-    header?: Record<string, string>
-    timeout?: number
-    success?: (result: WxRequestSuccessResult) => void
-    fail?: (error: unknown) => void
-}
-
-export interface WxPage {
+export interface TaroPage {
     route?: string
+    path?: string
+    $taroPath?: string
     options?: Record<string, string | number | boolean | undefined>
-}
-
-export interface WxLike {
-    request(options: WxRequestOptions): unknown
-    getStorageSync?: (key: string) => unknown
-    setStorageSync?: (key: string, value: unknown) => void
-    removeStorageSync?: (key: string) => void
-    onAppRoute?: (callback: (route: PageviewRoute) => void) => void
-    offAppRoute?: (callback: (route: PageviewRoute) => void) => void
-    onAppHide?: (callback: () => void) => void
-    offAppHide?: (callback: () => void) => void
-    getSystemInfoSync?: () => Record<string, unknown>
 }
 
 export interface PersistedState {
