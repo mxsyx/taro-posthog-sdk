@@ -115,20 +115,22 @@ export class PostHogMiniProgram {
         this.flushInterval = options.flush_interval ?? DEFAULT_FLUSH_INTERVAL
         this.requestTimeout = options.request_timeout ?? DEFAULT_REQUEST_TIMEOUT
         this.storageKey = `ph_${options.persistence_name || this.apiKey}_miniprogram`
-        this.disabled = !this.apiKey
+        this.disabled = !this.apiKey || options.disabled === true
 
         this.state = this.readState()
         this.setupIdentity()
         this.persistState()
 
-        if (options.capture_pageview !== false) {
+        if (!this.disabled && options.capture_pageview !== false) {
             this.installPageviewTracking()
         }
 
         this.appHideHandler = () => {
             void this.flush().catch(() => undefined)
         }
-        taro.onAppHide?.(this.appHideHandler)
+        if (!this.disabled) {
+            taro.onAppHide?.(this.appHideHandler)
+        }
 
         options.loaded?.(this)
     }

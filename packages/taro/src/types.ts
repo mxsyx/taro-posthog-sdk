@@ -44,6 +44,7 @@ export interface PostHogMiniProgramOptions {
     flush_interval?: number
     request_timeout?: number
     persistence_name?: string
+    disabled?: boolean
     capture_pageview?: boolean
     debug?: boolean
     disable_geoip?: boolean

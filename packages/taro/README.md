@@ -23,6 +23,8 @@ export const posthog = new PostHog('YOUR_PROJECT_API_KEY', {
 })
 ```
 
+Set `disabled: true` to initialize the client without capturing or sending events.
+
 Capture custom events:
 
 ```ts

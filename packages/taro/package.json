@@ -1,6 +1,6 @@
 {
     "name": "taro-posthog-sdk",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Minimal PostHog SDK for Taro mini apps",
     "repository": {
         "type": "git",
